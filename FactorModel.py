@@ -6,9 +6,12 @@ Created on Mon Sep  9 09:58:08 2019
 """
 
 import numpy as np, pandas, AMC
-stockDataFile = 'C:/Users/Norberto/Documents/ThomsonReutersData/FTSE_stocks.csv'
-capsdivsDataFile = 'C:/Users/Norberto/Documents/ThomsonReutersData/CapsDivs.csv'
-sectorDataFile = 'C:/Users/Norberto/Documents/ThomsonReutersData/Sectors.csv'
+#stockDataFile = 'C:/Users/Norberto/Documents/ThomsonReutersData/FTSE_stocks.csv'
+stockDataFile = '/workspaces/FactorModelNL/FTSE_stocks.csv'
+#capsdivsDataFile = 'C:/Users/Norberto/Documents/ThomsonReutersData/CapsDivs.csv'
+capsdivsDataFile = '/workspaces/FactorModelNL/CapsDivs.csv'
+#sectorDataFile = 'C:/Users/Norberto/Documents/ThomsonReutersData/Sectors.csv'
+sectorDataFile = '/workspaces/FactorModelNL/Sectors.csv'
 
 def readFile(filename,drop):
     data = pandas.read_csv(filename)
