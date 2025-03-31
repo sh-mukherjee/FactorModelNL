@@ -5,17 +5,23 @@ Created on Tue Mar 26 09:47:31 2019
 @author: Norberto
 """
 
-import numpy as np#, quandl
-import Black, copy
-from sklearn import decomposition, linear_model#, preprocessing, feature_selection
+import numpy as np
+import Black, copy # Importing the Black-Scholes module and copy for object duplication
+from sklearn import decomposition, linear_model # Import PCA and linear regression from scikit-learn
 
 
 
 def calcLogReturns(mydata):
+    """
+    Calculate log returns from a given dataset.
+    """
     data = np.array(mydata.values,dtype=np.float_)
     return np.log(np.delete(data,(0),axis=0)) - np.log(np.delete(data,(data.shape[0]-1),axis=0))
 
 def runStandardCalibration(mydata,delta = 1/252):
+    """
+    Perform standard calibration by computing historical mean returns, volatilities, and correlations.
+    """
     returns = calcLogReturns(mydata)
     means = np.mean(returns,axis=0)
     correlation = np.corrcoef(returns,rowvar=False)
@@ -25,6 +31,9 @@ def runStandardCalibration(mydata,delta = 1/252):
 #Average historical returns are too high, hence we divide by 4 to make the calibration more realistic - no changes are made to the covariance structure
 
 def runCalibration(mydata, nfactors=2, delta = 1 / 252):
+    """
+    Perform PCA-based calibration by extracting principal components from historical returns.
+    """
     returns = calcLogReturns(mydata)
     returnVols = np.std(returns,axis=0)
     p = decomposition.PCA(returns.shape[1])
@@ -34,6 +43,7 @@ def runCalibration(mydata, nfactors=2, delta = 1 / 252):
     vols = p.singular_values_ / np.sqrt(returns.shape[0])
     smalllambda = np.matmul(biglambda,np.diag(vols))
     #print(smalllambda)
+    # Scale factors to match observed volatilities
     scalings = np.empty(returns.shape[1])
     for j in range (0,returns.shape[1]):
         scalings[j] = returnVols[j] / np.sqrt((smalllambda[j,0:nfactors] * smalllambda[j,0:nfactors]).sum())
@@ -44,9 +54,15 @@ def runCalibration(mydata, nfactors=2, delta = 1 / 252):
 #Average historical returns are too high, hence we divide by 4 to make the calibration more realistic - no changes are made to the covariance structure
     
 def gbm(s,drift,sigma,delta,variate):
+    """
+    Simulate a single step in a Geometric Brownian Motion (GBM) process.
+    """
     return s*np.exp((drift-0.5*sigma*sigma)*delta+np.sqrt(delta)*sigma*variate)
 
 def gbmPath(s,mean,vols,corr,delta,horizon,sims):
+    """
+    Simulate multiple paths of a GBM process.
+    """
     number_of_steps = int(horizon / delta)
     dimension = len(mean)
     simarray = []#[None] * sims#[]
@@ -63,6 +79,9 @@ def gbmPath(s,mean,vols,corr,delta,horizon,sims):
     return simarray
 
 def gbmPathFromCalibration(calibration):
+    """
+    Generate GBM paths using parameters from a given calibration.
+    """
     averageReturns = calibration['MeanReturns']
     volatilities = calibration['Vols']
     correlation = calibration['Correlation']
@@ -70,6 +89,9 @@ def gbmPathFromCalibration(calibration):
     return lambda d,h,n: gbmPath(s,averageReturns,volatilities,correlation,d,h,n)
 
 def gbmPathFromFactors(s,means,vols,corr,delta,horizon,sims):
+    """
+    Simulate GBM paths using factor models.
+    """
     number_of_steps = int(horizon / delta)
     dimension = corr.shape[0]
     drifts = means - 0.5 * np.array(list(map(lambda x :sum(x *x), vols)))
@@ -100,6 +122,9 @@ def runSimulation(calibration,step = 0.5,horizon = 1.,number_of_paths = 10, isSt
     return simulation(step,horizon,number_of_paths)
 
 def catchException(vols):
+    """
+    Handle potential errors when computing volatilities.
+    """
     try:
         vols = np.sqrt(np.array(list(map(lambda x :sum(x *x), vols))))
     except Exception:
@@ -107,6 +132,9 @@ def catchException(vols):
     return vols
  
 def createPositions(l,calibration):
+    """
+    Create financial positions (equities, calls, and puts) based on calibration data.
+    """
     vols = calibration['Vols']
     vols = catchException(vols)
     equities = l['Equities']
@@ -137,6 +165,9 @@ def newInitialPortfolioValue(initialPositions):
     return sum(list(map(lambda x: x[0] * x[1](1,0),initialPositions)))
 
 def newPortfolioValue(sim,initialPositions,t,delta):
+    """
+    Compute the portfolio value at time t based on simulated paths.
+    """
     timestep = int(t/delta)
     valueDistribution = np.zeros(len(sim))
     for i in range (0,len(initialPositions)):
