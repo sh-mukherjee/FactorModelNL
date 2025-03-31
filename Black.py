@@ -60,7 +60,7 @@ def forward(s,k,r,maturity):
     """
     Computes the forward contract price (difference between spot and discounted strike).
     """
-  return s-k*np.exp(-r*maturity)
+    return s-k*np.exp(-r*maturity)
 
 def blackPut(s,k,r,sigma,maturity):
     """
