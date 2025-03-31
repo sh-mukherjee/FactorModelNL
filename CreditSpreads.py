@@ -8,7 +8,7 @@ Created on Mon Sep  3 14:11:54 2018
 import numpy as np, pandas, matplotlib.pyplot as plt, bisect
 from sklearn import decomposition, linear_model
 #%matplotlib qt
-file = 'C:/Users/Norberto/Documents/ThomsonReutersData/CDS.csv'
+file = 'CDS.csv'
 spreadmats = np.array([0.5,1,2,3,4,5,7,10])
 lgd = 0.75
 
