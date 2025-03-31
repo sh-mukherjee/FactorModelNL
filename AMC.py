@@ -9,15 +9,7 @@ import numpy as np#, quandl
 import Black, copy
 from sklearn import decomposition, linear_model#, preprocessing, feature_selection
 
-#quandl.ApiConfig.api_key = "xiLjHtDE3ovNashy8puw"
-#
-#def writeFile(mydata, file = 'C:/Users/Norberto/Documents/StockData.csv') :
-#    mydata.to_csv(file)
-#
-#def importFromQuandl(obs=500):
-#    data = quandl.get(["WIKI/AMZN.4","WIKI/GM.4","WIKI/JPM.4","WIKI/KO.4","WIKI/MSFT.4"],  rows=obs)
-#    data.dropna(inplace=True)
-#    return data
+
 
 def calcLogReturns(mydata):
     data = np.array(mydata.values,dtype=np.float_)
