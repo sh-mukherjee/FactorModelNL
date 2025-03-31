@@ -18,7 +18,7 @@ class Equity:
         self._initialmaturity = 0
         
     def modelprice(self,maturity):
-         """
+        """
         Returns the price of the equity at any maturity (which is constant in this simple model).
         """
         return self._price
