@@ -13,20 +13,34 @@ capsdivsDataFile = '/workspaces/FactorModelNL/CapsDivs.csv'
 sectorDataFile = '/workspaces/FactorModelNL/Sectors.csv'
 
 def readFile(filename,drop):
+    """
+    Reads a CSV file into a Pandas DataFrame.
+    Optionally drops rows with NaN values.
+    """
     data = pandas.read_csv(filename)
     if drop==True:
         data.dropna(inplace=True)
     return data
 
 def importData(files):
+    """
+    Imports stock, capitalization, and sector data from CSV files.
+    Returns a dictionary with structured data.
+    """
     alldata = [readFile(f,d) for (f,d) in zip(files,[True,False,True])]
     return {'stocks':alldata[0],'capsdivs':(alldata[1]).drop('TotalMarketCap',axis=1),'sectors':alldata[2],'marketcap':(alldata[1])['TotalMarketCap'][0]}
 
 def weightsFromCaps(capsDivs,totalCap):
+    """
+    Computes market capitalization weights.
+    """
     caps = capsDivs['Cap']
     return caps/totalCap
 
 def sectorBetas(sectornames):
+    """
+    Computes sector betas, mapping stocks to sectors.
+    """
     #s = list(zip(sectornames,sectornames.values[0]))
     #s.sort(key = lambda x: x[0])
     #sectors = np.unique([x[1] for x in s])
@@ -40,6 +54,9 @@ def sectorBetas(sectornames):
     return np.array(betas), sectors
 #[stockDataFile,capsdivsDataFile,sectorDataFile]
 def normaliseVariables(variable,allstocknames,stocknames):
+    """
+    Normalizes input variables using log transformation and standardization.
+    """
     logvariable = np.log(np.array(variable,dtype=np.float))
     oklogvariable = np.nan_to_num(logvariable)#logvariable[~np.isnan(logvariable)]
     logvariableWithNames = [(l,n) for (l,n) in zip(logvariable,allstocknames) if ~np.isnan(l)]
@@ -51,6 +68,9 @@ def normaliseVariables(variable,allstocknames,stocknames):
 #normaliseVariables(data['capsdivs'][:,1],data['capsdivs'][:,0],(data['stocks']).columns)
     #normWeightedVariables(cd['Div'],cd['Company'],(data['stocks']).columns,np.array(myweights))
 def normWeightedVariables(variable,allstocknames,stocknames,capweights):
+    """
+    Normalizes variables weighted by market capitalization.
+    """
     variable = np.array(variable,dtype=np.float)
     okvariable, okweights = variable[~np.isnan(variable)], capweights[~np.isnan(variable)]
     variableWithNames = [(l,n) for (l,n) in zip(variable,allstocknames) if ~np.isnan(l)]
@@ -61,13 +81,22 @@ def normWeightedVariables(variable,allstocknames,stocknames,capweights):
     return normalisedWithNames
 
 def logReturns(values,days):
+    """
+    Computes log returns over a given period.
+    """
     return np.log(values[days:,:]) - np.log(values[0:(values.shape[0]-days),:])
     #values.diff(1).drop(0)
 def excessReturns(stocks):#stocks=alldata[0]#stocks =stocks.drop('Date',axis=1)
+    """
+    Computes excess returns by subtracting the market return.
+    """
     rs = logReturns(np.array(stocks),1)
     return rs[:,1:] - rs[:,0].reshape(rs.shape[0],1)
 #stocks.drop(['.FTSE'],axis=1).apply(lambda x : x - stocks['.FTSE'])
 def calculateOLSFactors(excessrets,normalisedBetas,industrysectors):
+    """
+    Computes OLS factor model estimates.
+    """
     allbetas = np.concatenate((np.transpose(np.array([list(zip(*b))[0] for b in normalisedBetas])),industrysectors),axis=1)
     #tbetasinverse = np.linalg.inv(np.matmul(np.transpose(allbetas),allbetas))
     olsbetas = np.matmul(allbetas,np.linalg.inv(np.matmul(np.transpose(allbetas),allbetas)))#np.matmul(tbetasinverse,np.transpose(allbetas))
@@ -78,6 +107,9 @@ def calculateOLSFactors(excessrets,normalisedBetas,industrysectors):
     return {'Betas':allbetas,'OLSfactors':estimatedFactors,'OLScov':olscov,'OLSresiduals':residuals,'Weights':olsresvariance}
 
 def calculateWLSFactors(excessrets,OLSoutput):
+    """
+    Computes WLS factor model estimates using OLS residuals as weights.
+    """
     weightmatrix = np.diag(1/OLSoutput['Weights'])
     betas = OLSoutput['Betas']
     weightedBetasInverse = np.linalg.inv(np.matmul(np.matmul(np.transpose(betas),weightmatrix),betas))
@@ -91,6 +123,9 @@ def calculateWLSFactors(excessrets,OLSoutput):
     return {'Betas':betas,'WLSfactors':wlsFactors,'WLSmean':wlsmeans,'WLScov':wlscov,'WLSresiduals':residuals,'Residualmeans':resmeans,'Residualvariances':resvariance}
 #[normWeightedVariables(v,cd['Company'],(data['stocks']).columns,np.array(myweights)) for v in np.transpose(ll).tolist()]
 def calibrateFactorModel():
+    """
+    Calibrates the factor model using imported data.
+    """
     mydata = importData([stockDataFile,capsdivsDataFile,sectorDataFile])
     cd = mydata['capsdivs']    
     myweights = np.array(weightsFromCaps(cd,mydata['marketcap']))
@@ -111,6 +146,9 @@ def calibrateFactorModel():
     return wls
 
 def simulateFactorModel(calibration):
+    """
+    Runs a factor model simulation using AMC module.
+    """
     meanreturns = calibration['Betas']@calibration['WLSmean'] + calibration['Residualmeans']
     annualMeans = meanreturns * 260
     annualCov = calibration['WLScov'] * 260
