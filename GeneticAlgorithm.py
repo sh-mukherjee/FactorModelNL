@@ -75,7 +75,7 @@ class GeneticAlgorithm:
             parents = self.createNewGeneration(parents)
         return parents
 
-File = 'C:/Users/Norberto/Documents/MarkData.csv'    
+File = 'MarkData.csv'    
 def GenerateSim():
     data = pandas.read_csv(File,header=None)
     returns = np.array(data)[:,1]
